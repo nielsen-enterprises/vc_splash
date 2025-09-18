@@ -1,102 +1,14 @@
 // DOM elements
-const serverStatus = document.getElementById('serverStatus');
 const plexLink = document.getElementById('plexLink');
 const overseerrLink = document.getElementById('overseerrLink');
 
-// Server configuration
-const SERVER_IP = '71.73.2.228';
-const PLEX_PORT = 32400;
-const OVERSEERR_PORT = 5055;
-
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    // Check server status on load
-    checkServerStatus();
-    
-    // Set up periodic status checking (every 30 seconds)
-    setInterval(checkServerStatus, 30000);
-    
     // Add click tracking for service links
     plexLink.addEventListener('click', () => trackServiceClick('plex'));
     overseerrLink.addEventListener('click', () => trackServiceClick('overseerr'));
 });
 
-/**
- * Check server status by attempting to connect to the server
- */
-async function checkServerStatus() {
-    try {
-        // Update status to checking
-        updateStatusIndicator('checking', 'Checking server status...');
-        
-        // Try to fetch from Plex server (this will work if server is up)
-        const plexUrl = `http://${SERVER_IP}:${PLEX_PORT}/web/index.html`;
-        const response = await fetch(plexUrl, { 
-            method: 'HEAD',
-            mode: 'no-cors', // This allows cross-origin requests
-            cache: 'no-cache'
-        });
-        
-        // If we get here without an error, server is likely up
-        updateStatusIndicator('online', 'Server is online');
-        
-    } catch (error) {
-        // Try alternative method - ping the server IP
-        try {
-            await pingServer();
-            updateStatusIndicator('online', 'Server is online');
-        } catch (pingError) {
-            updateStatusIndicator('offline', 'Server is offline');
-        }
-    }
-}
-
-/**
- * Alternative server check using a simple ping-like approach
- */
-async function pingServer() {
-    return new Promise((resolve, reject) => {
-        // Create an image element to test connectivity
-        const img = new Image();
-        const timeout = setTimeout(() => {
-            reject(new Error('Timeout'));
-        }, 5000);
-        
-        img.onload = () => {
-            clearTimeout(timeout);
-            resolve();
-        };
-        
-        img.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error('Connection failed'));
-        };
-        
-        // Try to load a small image from the server
-        img.src = `http://${SERVER_IP}:${PLEX_PORT}/favicon.ico?t=${Date.now()}`;
-    });
-}
-
-/**
- * Update the status indicator with new status and message
- * @param {string} status - The status type (online, offline, checking)
- * @param {string} message - The status message
- */
-function updateStatusIndicator(status, message) {
-    serverStatus.className = `status-indicator status-${status}`;
-    serverStatus.innerHTML = `
-        <div class="status-dot"></div>
-        <span>${message}</span>
-    `;
-}
-
-/**
- * Manual server status check (can be triggered by user)
- */
-function manualStatusCheck() {
-    checkServerStatus();
-    showNotification('Checking server status...', 'info');
-}
 
 /**
  * Show a notification to the user
@@ -196,21 +108,6 @@ function copyToClipboard(url) {
     });
 }
 
-// Add keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + R to refresh server status
-    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        manualStatusCheck();
-    }
-    
-    // F5 to refresh server status
-    if (e.key === 'F5') {
-        e.preventDefault();
-        manualStatusCheck();
-    }
-});
-
 // Add right-click context menu for service links
 [plexLink, overseerrLink].forEach(link => {
     link.addEventListener('contextmenu', function(e) {
@@ -219,6 +116,3 @@ document.addEventListener('keydown', function(e) {
         copyToClipboard(url);
     });
 });
-
-// Add click handler to status indicator for manual refresh
-serverStatus.addEventListener('click', manualStatusCheck);
