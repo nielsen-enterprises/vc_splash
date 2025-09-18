@@ -16,26 +16,20 @@
                 Media Server Portal
             </h1>
             <p class="subtitle">Access your media services</p>
+            <div class="status-indicator status-checking" id="serverStatus">
+                <div class="status-dot"></div>
+                <span>Checking server status...</span>
+            </div>
         </header>
 
         <main class="main">
             <div class="url-input-section">
                 <div class="input-group">
-                    <label for="serverUrl" class="input-label">
-                        <i class="fas fa-globe"></i>
-                        Server URL
+                    <label class="input-label">
+                        <i class="fas fa-server"></i>
+                        Server Status
                     </label>
-                    <input 
-                        type="text" 
-                        id="serverUrl" 
-                        class="url-input" 
-                        placeholder="Enter your server URL (e.g., https://yourdomain.com)"
-                        value=""
-                    >
-                    <button id="updateLinks" class="update-btn">
-                        <i class="fas fa-sync-alt"></i>
-                        Update Links
-                    </button>
+                    <p style="color: #a0aec0; margin: 0;">Server: 71.73.2.228</p>
                 </div>
             </div>
 
@@ -46,7 +40,7 @@
                     </div>
                     <h3 class="service-title">Plex Media Server</h3>
                     <p class="service-description">Stream your personal media collection</p>
-                    <a href="#" id="plexLink" class="service-link" target="_blank">
+                    <a href="http://71.73.2.228:32400" id="plexLink" class="service-link active" target="_blank">
                         <i class="fas fa-external-link-alt"></i>
                         Open Plex
                     </a>
@@ -58,7 +52,7 @@
                     </div>
                     <h3 class="service-title">Overseerr</h3>
                     <p class="service-description">Request and manage media content</p>
-                    <a href="#" id="overseerrLink" class="service-link" target="_blank">
+                    <a href="http://71.73.2.228:5055" id="overseerrLink" class="service-link active" target="_blank">
                         <i class="fas fa-external-link-alt"></i>
                         Open Overseerr
                     </a>
@@ -67,11 +61,12 @@
 
             <div class="info-section">
                 <div class="info-card">
-                    <h4><i class="fas fa-info-circle"></i> How to use</h4>
+                    <h4><i class="fas fa-info-circle"></i> Server Information</h4>
                     <ol>
-                        <li>Enter your server URL in the input field above</li>
-                        <li>Click "Update Links" to generate the service links</li>
-                        <li>Click on the service cards to access Plex (port 32400) or Overseerr (port 5055)</li>
+                        <li>Server IP: 71.73.2.228</li>
+                        <li>Plex Media Server: Port 32400</li>
+                        <li>Overseerr Portal: Port 5055</li>
+                        <li>Click on the service cards to access your media services</li>
                     </ol>
                 </div>
             </div>

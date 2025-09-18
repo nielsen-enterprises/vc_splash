@@ -1,141 +1,101 @@
 // DOM elements
-const serverUrlInput = document.getElementById('serverUrl');
-const updateLinksBtn = document.getElementById('updateLinks');
+const serverStatus = document.getElementById('serverStatus');
 const plexLink = document.getElementById('plexLink');
 const overseerrLink = document.getElementById('overseerrLink');
 
-// Port configurations
+// Server configuration
+const SERVER_IP = '71.73.2.228';
 const PLEX_PORT = 32400;
 const OVERSEERR_PORT = 5055;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    // Load saved URL from localStorage if available
-    const savedUrl = localStorage.getItem('serverUrl');
-    if (savedUrl) {
-        serverUrlInput.value = savedUrl;
-        updateServiceLinks(savedUrl);
-    }
+    // Check server status on load
+    checkServerStatus();
     
-    // Add event listeners
-    updateLinksBtn.addEventListener('click', handleUpdateLinks);
-    serverUrlInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleUpdateLinks();
-        }
-    });
+    // Set up periodic status checking (every 30 seconds)
+    setInterval(checkServerStatus, 30000);
     
-    // Auto-update links when URL changes (with debounce)
-    let debounceTimer;
-    serverUrlInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            if (serverUrlInput.value.trim()) {
-                updateServiceLinks(serverUrlInput.value.trim());
-            } else {
-                disableServiceLinks();
-            }
-        }, 500);
-    });
+    // Add click tracking for service links
+    plexLink.addEventListener('click', () => trackServiceClick('plex'));
+    overseerrLink.addEventListener('click', () => trackServiceClick('overseerr'));
 });
 
 /**
- * Handle the update links button click
+ * Check server status by attempting to connect to the server
  */
-function handleUpdateLinks() {
-    const url = serverUrlInput.value.trim();
-    
-    if (!url) {
-        showNotification('Please enter a server URL', 'error');
-        return;
-    }
-    
-    if (!isValidUrl(url)) {
-        showNotification('Please enter a valid URL (e.g., https://yourdomain.com)', 'error');
-        return;
-    }
-    
-    // Save URL to localStorage
-    localStorage.setItem('serverUrl', url);
-    
-    // Update the service links
-    updateServiceLinks(url);
-    
-    showNotification('Links updated successfully!', 'success');
-}
-
-/**
- * Update the service links with the provided base URL
- * @param {string} baseUrl - The base server URL
- */
-function updateServiceLinks(baseUrl) {
-    // Clean and normalize the URL
-    const cleanUrl = normalizeUrl(baseUrl);
-    
-    // Generate service URLs
-    const plexUrl = `${cleanUrl}:${PLEX_PORT}`;
-    const overseerrUrl = `${cleanUrl}:${OVERSEERR_PORT}`;
-    
-    // Update link hrefs
-    plexLink.href = plexUrl;
-    overseerrLink.href = overseerrUrl;
-    
-    // Enable the links
-    plexLink.classList.add('active');
-    overseerrLink.classList.add('active');
-    
-    // Update link text to show URLs
-    plexLink.innerHTML = `<i class="fas fa-external-link-alt"></i> Open Plex (${PLEX_PORT})`;
-    overseerrLink.innerHTML = `<i class="fas fa-external-link-alt"></i> Open Overseerr (${OVERSEERR_PORT})`;
-    
-    // Add click tracking
-    plexLink.addEventListener('click', () => trackServiceClick('plex'));
-    overseerrLink.addEventListener('click', () => trackServiceClick('overseerr'));
-}
-
-/**
- * Disable service links when no URL is provided
- */
-function disableServiceLinks() {
-    plexLink.classList.remove('active');
-    overseerrLink.classList.remove('active');
-    plexLink.href = '#';
-    overseerrLink.href = '#';
-    plexLink.innerHTML = `<i class="fas fa-external-link-alt"></i> Open Plex`;
-    overseerrLink.innerHTML = `<i class="fas fa-external-link-alt"></i> Open Overseerr`;
-}
-
-/**
- * Normalize URL to ensure proper format
- * @param {string} url - The URL to normalize
- * @returns {string} - The normalized URL
- */
-function normalizeUrl(url) {
-    // Remove trailing slash
-    url = url.replace(/\/$/, '');
-    
-    // Add protocol if missing
-    if (!url.match(/^https?:\/\//)) {
-        url = 'http://' + url;
-    }
-    
-    return url;
-}
-
-/**
- * Validate if the provided string is a valid URL
- * @param {string} url - The URL to validate
- * @returns {boolean} - True if valid, false otherwise
- */
-function isValidUrl(url) {
+async function checkServerStatus() {
     try {
-        // Add protocol if missing for validation
-        const testUrl = url.match(/^https?:\/\//) ? url : 'http://' + url;
-        new URL(testUrl);
-        return true;
-    } catch (e) {
-        return false;
+        // Update status to checking
+        updateStatusIndicator('checking', 'Checking server status...');
+        
+        // Try to fetch from Plex server (this will work if server is up)
+        const plexUrl = `http://${SERVER_IP}:${PLEX_PORT}/web/index.html`;
+        const response = await fetch(plexUrl, { 
+            method: 'HEAD',
+            mode: 'no-cors', // This allows cross-origin requests
+            cache: 'no-cache'
+        });
+        
+        // If we get here without an error, server is likely up
+        updateStatusIndicator('online', 'Server is online');
+        
+    } catch (error) {
+        // Try alternative method - ping the server IP
+        try {
+            await pingServer();
+            updateStatusIndicator('online', 'Server is online');
+        } catch (pingError) {
+            updateStatusIndicator('offline', 'Server is offline');
+        }
     }
+}
+
+/**
+ * Alternative server check using a simple ping-like approach
+ */
+async function pingServer() {
+    return new Promise((resolve, reject) => {
+        // Create an image element to test connectivity
+        const img = new Image();
+        const timeout = setTimeout(() => {
+            reject(new Error('Timeout'));
+        }, 5000);
+        
+        img.onload = () => {
+            clearTimeout(timeout);
+            resolve();
+        };
+        
+        img.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Connection failed'));
+        };
+        
+        // Try to load a small image from the server
+        img.src = `http://${SERVER_IP}:${PLEX_PORT}/favicon.ico?t=${Date.now()}`;
+    });
+}
+
+/**
+ * Update the status indicator with new status and message
+ * @param {string} status - The status type (online, offline, checking)
+ * @param {string} message - The status message
+ */
+function updateStatusIndicator(status, message) {
+    serverStatus.className = `status-indicator status-${status}`;
+    serverStatus.innerHTML = `
+        <div class="status-dot"></div>
+        <span>${message}</span>
+    `;
+}
+
+/**
+ * Manual server status check (can be triggered by user)
+ */
+function manualStatusCheck() {
+    checkServerStatus();
+    showNotification('Checking server status...', 'info');
 }
 
 /**
@@ -238,17 +198,16 @@ function copyToClipboard(url) {
 
 // Add keyboard shortcuts
 document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + Enter to update links
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    // Ctrl/Cmd + R to refresh server status
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
-        handleUpdateLinks();
+        manualStatusCheck();
     }
     
-    // Escape to clear input
-    if (e.key === 'Escape') {
-        serverUrlInput.value = '';
-        disableServiceLinks();
-        localStorage.removeItem('serverUrl');
+    // F5 to refresh server status
+    if (e.key === 'F5') {
+        e.preventDefault();
+        manualStatusCheck();
     }
 });
 
@@ -256,10 +215,10 @@ document.addEventListener('keydown', function(e) {
 [plexLink, overseerrLink].forEach(link => {
     link.addEventListener('contextmenu', function(e) {
         e.preventDefault();
-        
-        if (this.classList.contains('active')) {
-            const url = this.href;
-            copyToClipboard(url);
-        }
+        const url = this.href;
+        copyToClipboard(url);
     });
 });
+
+// Add click handler to status indicator for manual refresh
+serverStatus.addEventListener('click', manualStatusCheck);
