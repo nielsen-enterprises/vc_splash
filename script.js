@@ -1,12 +1,16 @@
 // DOM elements
-const plexLink = document.getElementById('plexLink');
-const overseerrLink = document.getElementById('overseerrLink');
+const watchLink = document.getElementById('watchLink');
+const chatLink = document.getElementById('chatLink');
+const requestsLink = document.getElementById('requestsLink');
+const convertLink = document.getElementById('convertLink');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     // Add click tracking for service links
-    plexLink.addEventListener('click', () => trackServiceClick('plex'));
-    overseerrLink.addEventListener('click', () => trackServiceClick('overseerr'));
+    watchLink.addEventListener('click', () => trackServiceClick('watch'));
+    chatLink.addEventListener('click', () => trackServiceClick('chat'));
+    requestsLink.addEventListener('click', () => trackServiceClick('requests'));
+    convertLink.addEventListener('click', () => trackServiceClick('convert'));
 });
 
 
@@ -109,7 +113,7 @@ function copyToClipboard(url) {
 }
 
 // Add right-click context menu for service links
-[plexLink, overseerrLink].forEach(link => {
+[watchLink, chatLink, requestsLink, convertLink].forEach(link => {
     link.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         const url = this.href;
